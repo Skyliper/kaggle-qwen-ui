@@ -42,4 +42,6 @@ edit('app/client/platforms/openai.ts',lambda s:s.replace('    console.log("[Requ
       (requestPayload as any).min_p = 0;
     }'''))
 edit('app/layout.tsx',lambda s:s.replace('title: "NextChat"','title: "Qwen · NextChat"').replace('<script src="/serviceWorkerRegister.js" defer></script>','').replace('href="/site.webmanifest"','href="/kaggle-qwen-ui/chat/site.webmanifest"'))
+(r/'app/qwen-static.d.ts').write_text('declare global { type DangerConfig = Pick<ReturnType<typeof import("./config/server").getServerSideConfig>, "needCode" | "hideUserApiKey" | "disableGPT4" | "hideBalanceQuery" | "disableFastLink" | "customModels" | "defaultModel" | "visionModels">; } export {};\n',encoding='utf-8')
+edit('app/store/chat.ts',lambda s:s.replace('const maxTokenThreshold = modelConfig.max_tokens;', 'const maxTokenThreshold = modelConfig.model === "qwen3.8-27b-uncensored" ? 120832 : modelConfig.max_tokens;').replace('if (historyMsgLength > (modelConfig?.max_tokens || 4000))', 'if (historyMsgLength > (modelConfig.model === "qwen3.8-27b-uncensored" ? 120832 : (modelConfig?.max_tokens || 4000)))'))
 print('Prepared pinned NextChat static build for Qwen; no API credentials embedded.')
