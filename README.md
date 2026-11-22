@@ -9,3 +9,6 @@ Ready client: [NextChat](https://github.com/ChatGPTNextWeb/NextChat), MIT, pinne
 
 ## Search and page reader
 The **Поиск + Tor** toggle supplies native model tools `web_search` and `read_web_page` through the authenticated gateway. Keyless DDGS metasearch handles normal search; Ahmia provides an incomplete onion index. Tor runs in the Kaggle session for v3 onion page reads, never on the user's PC. No paid search API or monthly quota is configured, but upstream rate limits and availability still apply. Pages are text-only, capped at 2 MiB downloads and 20,000 extracted characters per read; JavaScript and logins are not supported. External page content is untrusted. The updated Kaggle notebook must be started for these endpoints to work.
+
+
+The Qwen theme fills the viewport with a neutral dark chat and sidebar. Search/Tor and the server panel are available from the sliders button beside the composer; there is no extra outer toolbar. Existing chat history remains in NextChat browser storage.

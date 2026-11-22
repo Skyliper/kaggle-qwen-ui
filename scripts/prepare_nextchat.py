@@ -48,3 +48,8 @@ print('Prepared pinned NextChat static build for Qwen; no API credentials embedd
 
 shutil.copyfile(Path(__file__).with_name('qwen-web.ts'),r/'app/qwen-web.ts')
 edit('app/client/platforms/openai.ts',lambda s:s.replace('"use client";', '"use client";\nimport { qwenWebTools } from "../../qwen-web";').replace('const [tools, funcs] = usePluginStore','let [tools, funcs] = usePluginStore').replace('// console.log("getAsTools", tools, funcs);', 'if(modelConfig.model === "qwen3.8-27b-uncensored") {\n          const [webTools,webFuncs]=qwenWebTools();\n          tools=[...(tools as any[]),...webTools];funcs={...funcs,...webFuncs};\n        }'))
+
+shutil.copyfile(Path(__file__).with_name('qwen-controls.tsx'),r/'app/components/qwen-controls.tsx')
+edit('app/components/chat.tsx',lambda s:'import { QwenControls } from "./qwen-controls";\n'+re.sub(r'<ChatActions\s+uploadImage=\{uploadImage\}.*?setShowChatSidePanel=\{setShowChatSidePanel\}\s*/>', '<QwenControls />',s,flags=re.S).replace('placeholder={Locale.Chat.Input(submitKey)}','placeholder="Напиши сообщение…"'))
+edit('app/components/sidebar.tsx',lambda s:s.replace('title="NextChat"','title="Qwen"').replace('subTitle="Build your own AI assistant."','subTitle="Твоё пространство для идей"'))
+edit('app/store/config.ts',lambda s:s.replace('theme: Theme.Auto as Theme','theme: Theme.Dark as Theme').replace('tightBorder: !!config?.isApp','tightBorder: true').replace('sendPreviewBubble: true','sendPreviewBubble: false'))
