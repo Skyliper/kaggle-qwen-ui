@@ -47,4 +47,4 @@ edit('app/store/chat.ts',lambda s:s.replace('const maxTokenThreshold = modelConf
 print('Prepared pinned NextChat static build for Qwen; no API credentials embedded.')
 
 shutil.copyfile(Path(__file__).with_name('qwen-web.ts'),r/'app/qwen-web.ts')
-edit('app/client/platforms/openai.ts',lambda s:'import { qwenWebTools } from "../../qwen-web";\n'+s.replace('const [tools, funcs] = usePluginStore','let [tools, funcs] = usePluginStore').replace('// console.log("getAsTools", tools, funcs);', 'if(modelConfig.model === "qwen3.8-27b-uncensored") {\n          const [webTools,webFuncs]=qwenWebTools();\n          tools=[...tools,...webTools];funcs={...funcs,...webFuncs};\n        }'))
+edit('app/client/platforms/openai.ts',lambda s:s.replace('"use client";', '"use client";\nimport { qwenWebTools } from "../../qwen-web";').replace('const [tools, funcs] = usePluginStore','let [tools, funcs] = usePluginStore').replace('// console.log("getAsTools", tools, funcs);', 'if(modelConfig.model === "qwen3.8-27b-uncensored") {\n          const [webTools,webFuncs]=qwenWebTools();\n          tools=[...tools,...webTools];funcs={...funcs,...webFuncs};\n        }'))
