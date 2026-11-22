@@ -7,9 +7,10 @@ type Row = {id:string;revision:string;session:Chat};
 let baseline = new Map<string,Row>();
 let loaded = false;
 let queued: string | undefined;
-let timer: ReturnType<typeof setTimeout>;
+let timer: ReturnType<typeof setTimeout> | undefined;
 let saving = false;
 let blocked = false;
+const checkpointAt = new Map<string,number>();
 export function cloudHistoryLoaded(){return loaded;}
 
 function status(message:string) {
@@ -19,10 +20,12 @@ function status(message:string) {
 async function api(body?:unknown) {
   const pat = sessionStorage.getItem("qwen-gh-pat");
   if(!pat) throw Error("Войди через GitHub.");
+  const payload = body === undefined ? undefined : JSON.stringify(body);
   const response = await fetch(qwenSession().baseUrl+"/__chat_history", {
     method: body === undefined ? "GET" : "POST",
     headers: {Authorization:"Bearer "+pat,"Content-Type":"application/json"},
-    body:body === undefined ? undefined : JSON.stringify(body),
+    body:payload,
+    keepalive:payload !== undefined && new TextEncoder().encode(payload).length < 60000,
     cache:"no-store",
   });
   if(response.status===409) throw Error("Диалог изменён на другом устройстве. Скопируй несохранённый ответ перед обновлением страницы.");
@@ -31,22 +34,30 @@ async function api(body?:unknown) {
   return response.json();
 }
 
+if(typeof window!=="undefined"){
+  window.addEventListener("pagehide",()=>void flush());
+}
+
 export async function loadQwenHistory() {
   const {chats} = await api() as {chats:Row[]};
   baseline = new Map(chats.map(row=>[row.id,row]));
   loaded = true;
   blocked = false;
-  return JSON.stringify({version:3.3,state:chats.length?{sessions:chats.map(row=>row.session),currentSessionIndex:0}:{}});
+  return JSON.stringify({version:3.3,state:chats.length?{sessions:chats.map(({session})=>({...session,messages:session.messages.map(message=>message.streaming?{...message,streaming:false,content:(message.content||"")+"\n\n_Ответ был прерван. Можно повторить запрос._"}:message)})),currentSessionIndex:0}:{}});
 }
 
 export function saveQwenHistory(value:string) {
   if(!loaded||blocked)return;
   queued=value;
-  clearTimeout(timer);
-  timer=setTimeout(()=>void flush(),300);
+  const sessions:Chat[]=JSON.parse(value).state.sessions;
+  const hasNewTurn=sessions.some(chat=>chat.messages.length>(baseline.get(chat.id)?.session.messages.length??0)&&chat.messages.some(message=>message.streaming));
+  if(hasNewTurn&&!saving){void flush();return;}
+  if(!saving&&!timer)timer=setTimeout(()=>void flush(),120);
 }
 
 async function flush(){
+  clearTimeout(timer);
+  timer=undefined;
   if(saving||!queued||blocked)return;
   const value=queued;
   queued=undefined;
@@ -55,11 +66,13 @@ async function flush(){
     const sessions:Chat[]=JSON.parse(value).state.sessions;
     const current=new Set(sessions.map(chat=>chat.id));
     for(const session of sessions){
-      if(session.messages.some(message=>message.streaming))continue;
       const previous=baseline.get(session.id);
+      const running=session.messages.some(message=>message.streaming);
+      if(running && previous?.session.messages.length===session.messages.length && Date.now()-(checkpointAt.get(session.id)||0)<5000)continue;
       if((!previous&&!session.messages.length)||JSON.stringify(previous?.session)===JSON.stringify(session))continue;
       const {revision}=await api({id:session.id,expected:previous?.revision,session});
       baseline.set(session.id,{id:session.id,revision,session});
+      checkpointAt.set(session.id,Date.now());
     }
     for(const [id,previous] of baseline){
       if(current.has(id))continue;
@@ -74,7 +87,7 @@ async function flush(){
     else {queued??=value;timer=setTimeout(()=>void flush(),6000)}
     return;
   }finally{saving=false}
-  if(queued)void flush();
+  if(queued&&!timer)timer=setTimeout(()=>void flush(),120);
 }
 
 export async function importQwenHistory(){
