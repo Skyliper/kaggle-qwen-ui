@@ -3,7 +3,7 @@ import re,shutil,sys,json
 r=Path(sys.argv[1]).resolve()
 def edit(name,fn):
  p=r/name;p.write_text(fn(p.read_text(encoding='utf-8')),encoding='utf-8')
-edit('next.config.mjs',lambda s:s.replace('  output: mode,','  basePath: "/kaggle-qwen-ui/chat",\n  trailingSlash: true,\n  output: mode,').replace('    forceSwcTransforms: true,','    forceSwcTransforms: true,\n    cpus: 2,'))
+edit('next.config.mjs',lambda s:s.replace('const disableChunk = !!process.env.DISABLE_CHUNK || mode === "export";', 'const disableChunk = false;').replace('  output: mode,','  basePath: "/kaggle-qwen-ui/chat",\n  trailingSlash: true,\n  output: mode,').replace('    forceSwcTransforms: true,','    forceSwcTransforms: true,\n    cpus: 2,'))
 api=(r/'app/api').resolve()
 assert api.is_relative_to(r) and api.name=='api'
 if api.exists():shutil.rmtree(api)
