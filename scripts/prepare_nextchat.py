@@ -61,3 +61,8 @@ edit('app/components/chat.tsx',lambda s:'import { useQwenFiles, qwenDisplayText 
 edit("app/components/chat.tsx",lambda s:s.replace("    context.push(copiedHello);","    // No synthetic greeting in the Codex-style workspace."))
 
 edit("app/components/chat.tsx",lambda s:s.replace("content={getMessageTextContent(message)}", "content={qwenDisplayText(getMessageTextContent(message),message.role)}"))
+
+edit("app/components/chat.tsx",lambda s:s.replace('icon={<SendWhiteIcon />}\n                  text="↑"', 'icon={<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5m-5 5 5-5 5 5"/></svg>}'))
+
+shutil.copyfile(Path(__file__).with_name('qwen-history.ts'),r/'app/qwen-history.ts')
+edit('app/utils/indexedDB-storage.ts',lambda s:'import { historyKey, loadQwenHistory, saveQwenHistory, cloudHistoryLoaded } from "../qwen-history";\n'+s.replace('      if(name === "access-control") {', '      if(name === historyKey)return await loadQwenHistory();\n      if(name === "access-control") {',1).replace('      await set(name, value);','      if(name === historyKey && cloudHistoryLoaded()){saveQwenHistory(value);return;}\n      await set(name, value);'))
