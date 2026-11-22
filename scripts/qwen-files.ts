@@ -1,9 +1,10 @@
-import {useEffect,useState} from "react";
+import {useEffect,useRef,useState} from "react";
 export type QwenAttachment={id:string,name:string,text:string};
 export function useQwenFiles(sessionId:string){
+ const epoch=useRef(0);
  const [files,setFiles]=useState<QwenAttachment[]>([]),[reading,setReading]=useState(false),[error,setError]=useState("");
- useEffect(()=>{setFiles([]);setError("")},[sessionId]);
- async function add(input:FileList|null){if(!input||reading)return;setReading(true);setError("");const added:QwenAttachment[]=[];
+ useEffect(()=>{epoch.current++;setFiles([]);setReading(false);setError("")},[sessionId]);
+ async function add(input:FileList|null){if(!input||reading)return;const ticket=epoch.current;setReading(true);setError("");const added:QwenAttachment[]=[];
   try{if(files.length+input.length>5)throw Error("Можно прикрепить до 5 файлов за сообщение.");
    for(const file of Array.from(input)){
     if(file.size>10*1024*1024)throw Error(file.name+": размер больше 10 МБ.");
@@ -21,8 +22,8 @@ export function useQwenFiles(sessionId:string){
     if(!text.trim())throw Error(file.name+": текст не найден. Для сканов нужен OCR.");
     if([...files,...added].reduce((n,f)=>n+f.text.length,0)+text.length>160000)throw Error("Общий объём файлов больше 160 000 символов. Раздели их на несколько сообщений.");
     added.push({id:crypto.randomUUID(),name:file.name,text});
-   }setFiles(previous=>[...previous,...added]);
-  }catch(e){setError(e instanceof Error?e.message:"Не удалось прочитать файл.")}finally{setReading(false)}
+   }if(ticket===epoch.current)setFiles(previous=>[...previous,...added]);
+  }catch(e){if(ticket===epoch.current)setError(e instanceof Error?e.message:"Не удалось прочитать файл.")}finally{if(ticket===epoch.current)setReading(false)}
  }
  return {files,reading,error,add,remove:(id:string)=>setFiles(previous=>previous.filter(f=>f.id!==id)),clear:()=>{setFiles([]);setError("")},compose:(input:string)=>files.length?input+"\n\nПрикреплённые файлы (содержимое):\n"+files.map(f=>"\n--- Файл: "+f.name+" ---\n"+f.text+"\n--- Конец файла ---").join("\n"):input};
 }
