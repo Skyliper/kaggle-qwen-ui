@@ -16,3 +16,5 @@ sessionStorage.setItem('qwen-web-enabled',String($('web-enabled').checked));
 $('web-enabled').onchange=()=>{const v=String($('web-enabled').checked);sessionStorage.setItem('qwen-web-enabled',v);localStorage.setItem('qwen-web-enabled',v)};
 
 window.addEventListener('message',event=>{if(event.origin!==location.origin||event.source!==$('client').contentWindow)return;if(event.data?.type==='qwen-logout')$('logout').click()});
+
+sessionStorage.setItem("qwen-onion-enabled",String(localStorage.getItem("qwen-onion-enabled")==="true"));
