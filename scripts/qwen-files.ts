@@ -27,3 +27,11 @@ export function useQwenFiles(sessionId:string){
  }
  return {files,reading,error,add,remove:(id:string)=>setFiles(previous=>previous.filter(f=>f.id!==id)),clear:()=>{setFiles([]);setError("")},compose:(input:string)=>files.length?input+"\n\nПрикреплённые файлы (содержимое):\n"+files.map(f=>"\n--- Файл: "+f.name+" ---\n"+f.text+"\n--- Конец файла ---").join("\n"):input};
 }
+
+export function qwenDisplayText(text:string,role:string){
+ if(role!=="user")return text;
+ const marker="\n\nПрикреплённые файлы (содержимое):\n",index=text.indexOf(marker);
+ if(index<0)return text;
+ const names=Array.from(text.slice(index).matchAll(/^--- Файл: (.+) ---$/gm),m=>m[1]);
+ return text.slice(0,index)+(names.length?"\n\n📎 "+names.join(" · "):"");
+}
