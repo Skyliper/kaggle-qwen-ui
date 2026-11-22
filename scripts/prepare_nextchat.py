@@ -66,3 +66,50 @@ edit("app/components/chat.tsx",lambda s:s.replace('icon={<SendWhiteIcon />}\n   
 
 shutil.copyfile(Path(__file__).with_name('qwen-history.ts'),r/'app/qwen-history.ts')
 edit('app/utils/indexedDB-storage.ts',lambda s:'import { historyKey, loadQwenHistory, saveQwenHistory, cloudHistoryLoaded } from "../qwen-history";\n'+s.replace('      if(name === "access-control") {', '      if(name === historyKey)return await loadQwenHistory();\n      if(name === "access-control") {',1).replace('      await set(name, value);','      if(name === historyKey && cloudHistoryLoaded()){saveQwenHistory(value);return;}\n      await set(name, value);'))
+
+shutil.copyfile(Path(__file__).with_name('qwen-jobs.ts'),r/'app/qwen-jobs.ts')
+def background_openai(s):
+ s=s.replace('"use client";','"use client";\nimport {runQwenJob} from "../../qwen-jobs";',1)
+ marker='        streamWithThink('
+ assert s.count(marker)==1
+ return s.replace(marker, """        if(options.qwenJobId && modelConfig.model === "qwen3.8-27b-uncensored"){
+          void runQwenJob(options.qwenJobId,{...requestPayload,tools:(tools as any[]).filter(tool=>["web_search","read_web_page","onion_extended_search"].includes(tool.function?.name))},options,controller.signal);
+          return;
+        }
+"""+marker,1)
+edit('app/client/platforms/openai.ts',background_openai)
+edit('app/client/api.ts', lambda s:s.replace('export interface ChatOptions {','export interface ChatOptions {\n  qwenJobId?: string;'))
+def background_store(s):
+ marker='        const messageIndex = session.messages.length + 1;'
+ assert s.count(marker)==1
+ s=s.replace(marker,marker+'\n        const qwenJobId = modelConfig.model === "qwen3.8-27b-uncensored" ? botMessage.id : undefined;\n        if(qwenJobId)Object.assign(botMessage,{qwenJob:qwenJobId});')
+ return s.replace('          messages: sendMessages,','          qwenJobId,\n          messages: sendMessages,',1)
+edit('app/store/chat.ts',background_store)
+def background_chat(s):
+ s='import {watchQwenJob,qwenJobText,stopQwenJob} from "../qwen-jobs";\n'+s
+ marker='  const doSubmit = (userInput: string) => {'
+ assert s.count(marker)==1
+ s=s.replace(marker,"""  useEffect(()=>{
+    const controller=new AbortController();
+    const target=useChatStore.getState().sessions.find(chat=>chat.id===session.id);
+    for(const message of target?.messages||[]){
+      const pending=message as typeof message & {qwenJob?:string;qwenResume?:boolean};
+      if(!pending.qwenResume||!pending.qwenJob)continue;
+      const update=(job:Parameters<typeof qwenJobText>[0])=>{
+        if(controller.signal.aborted||!target)return;
+        useChatStore.getState().updateTargetSession(target,chat=>{
+          const current=chat.messages.find(item=>item.id===message.id);
+          if(!current)return;
+          current.content=qwenJobText(job);
+          current.streaming=job.status==="queued"||job.status==="running";
+          if(!current.streaming)Object.assign(current,{qwenResume:false});
+          chat.messages=chat.messages.concat();
+        });
+      };
+      void watchQwenJob(pending.qwenJob,update,controller.signal).then(job=>{if(job)update(job)});
+    }
+    return ()=>controller.abort();
+  },[session.id,useChatStore.getState()._hasHydrated]);
+"""+marker)
+ return s.replace('  const onUserStop = (messageId: string) => {','  const onUserStop = (messageId: string) => {\n    const message=session.messages.find(item=>item.id===messageId) as {qwenResume?:boolean;qwenJob?:string}|undefined;\n    if(message?.qwenResume&&message.qwenJob){void stopQwenJob(message.qwenJob);return;}')
+edit('app/components/chat.tsx',background_chat)

@@ -43,7 +43,7 @@ export async function loadQwenHistory() {
   baseline = new Map(chats.map(row=>[row.id,row]));
   loaded = true;
   blocked = false;
-  return JSON.stringify({version:3.3,state:chats.length?{sessions:chats.map(({session})=>({...session,messages:session.messages.map(message=>message.streaming?{...message,streaming:false,content:(message.content||"")+"\n\n_Ответ был прерван. Можно повторить запрос._"}:message)})),currentSessionIndex:0}:{}});
+  return JSON.stringify({version:3.3,state:chats.length?{sessions:chats.map(({session})=>({...session,messages:session.messages.map(message=>message.streaming&&message.qwenJob?{...message,qwenResume:true}:message.streaming?{...message,streaming:false,content:(message.content||"")+"\n\n_Ответ был прерван. Можно повторить запрос._"}:message)})),currentSessionIndex:0}:{}});
 }
 
 export function saveQwenHistory(value:string) {
