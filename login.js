@@ -10,3 +10,7 @@ $('reveal').onclick=()=>{$('pat').type=$('pat').type==='password'?'text':'passwo
 $('chat-tab').onclick=()=>show('chat');$('server-tab').onclick=()=>show('server');
 $('logout').onclick=()=>{clearInterval(timer);$('client').removeAttribute('src');sessionStorage.removeItem('qwen-gh-pat');sessionStorage.removeItem('qwen-chat-config');localStorage.removeItem('kaggle-qwen-github-pat');pat='';$('workspace').hidden=true;$('login').hidden=false;$('login-error').textContent=''};
 const remembered=sessionStorage.getItem('qwen-gh-pat')||localStorage.getItem('kaggle-qwen-github-pat');if(remembered){$('enter').disabled=true;login(remembered).catch(e=>{$('login-error').textContent=e.message}).finally(()=>{$('enter').disabled=false})}
+
+$('web-enabled').checked=localStorage.getItem('qwen-web-enabled')!=='false';
+sessionStorage.setItem('qwen-web-enabled',String($('web-enabled').checked));
+$('web-enabled').onchange=()=>{const v=String($('web-enabled').checked);sessionStorage.setItem('qwen-web-enabled',v);localStorage.setItem('qwen-web-enabled',v)};
