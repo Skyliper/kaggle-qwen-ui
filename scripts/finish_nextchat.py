@@ -8,3 +8,5 @@ for p in out.rglob('*.html'):
 shutil.copyfile(r/'LICENSE',out/'NEXTCHAT-LICENSE.txt')
 
 shutil.copyfile(Path(__file__).with_name('qwen-theme.css'),out/'qwen-theme.css')
+
+shutil.copyfile(r/"node_modules/pdfjs-dist/build/pdf.worker.min.mjs",out/"pdf.worker.min.mjs")

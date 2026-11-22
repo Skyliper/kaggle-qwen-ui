@@ -43,6 +43,8 @@ jobs:
         with:
           path: .yarn-cache
           key: nextchat-${{ runner.os }}-${{ hashFiles('_nextchat/yarn.lock') }}
+      - run: yarn add --exact pdfjs-dist@4.10.38 mammoth@1.10.0 --ignore-scripts --non-interactive
+        working-directory: _nextchat
       - run: yarn mask && yarn next build
         working-directory: _nextchat
         env:

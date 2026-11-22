@@ -18,3 +18,5 @@ $('web-enabled').onchange=()=>{const v=String($('web-enabled').checked);sessionS
 window.addEventListener('message',event=>{if(event.origin!==location.origin||event.source!==$('client').contentWindow)return;if(event.data?.type==='qwen-logout')$('logout').click()});
 
 sessionStorage.setItem("qwen-onion-enabled",String(localStorage.getItem("qwen-onion-enabled")==="true"));
+
+sessionStorage.setItem("qwen-effort",localStorage.getItem("qwen-effort")||"medium");

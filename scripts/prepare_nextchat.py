@@ -37,7 +37,7 @@ s=s.replace('      await set(name, value);','''      if(name === "access-control
       await set(name, value);''');p.write_text(s,encoding='utf-8')
 edit('app/client/platforms/openai.ts',lambda s:s.replace('    console.log("[Request] openai payload: ", requestPayload);','''    if(modelConfig.model === "qwen3.8-27b-uncensored") {
       (requestPayload as any).max_tokens = Math.min(modelConfig.max_tokens || 32768,32768);
-      (requestPayload as any).reasoning_effort = "medium";
+      (requestPayload as any).reasoning_effort = ["low","medium","high"].includes(sessionStorage.getItem("qwen-effort") || "") ? sessionStorage.getItem("qwen-effort") : "medium";
       (requestPayload as any).top_k = 20;
       (requestPayload as any).min_p = 0;
     }'''))
@@ -50,6 +50,12 @@ shutil.copyfile(Path(__file__).with_name('qwen-web.ts'),r/'app/qwen-web.ts')
 edit('app/client/platforms/openai.ts',lambda s:s.replace('"use client";', '"use client";\nimport { qwenWebTools } from "../../qwen-web";').replace('const [tools, funcs] = usePluginStore','let [tools, funcs] = usePluginStore').replace('// console.log("getAsTools", tools, funcs);', 'if(modelConfig.model === "qwen3.8-27b-uncensored") {\n          const [webTools,webFuncs]=qwenWebTools();\n          tools=[...(tools as any[]),...webTools];funcs={...funcs,...webFuncs};\n        }'))
 
 shutil.copyfile(Path(__file__).with_name('qwen-controls.tsx'),r/'app/components/qwen-controls.tsx')
-edit('app/components/chat.tsx',lambda s:'import { QwenControls } from "./qwen-controls";\n'+re.sub(r'<ChatActions\s+uploadImage=\{uploadImage\}.*?setShowChatSidePanel=\{setShowChatSidePanel\}\s*/>', '<QwenControls />',s,flags=re.S).replace('placeholder={Locale.Chat.Input(submitKey)}','placeholder="Напиши сообщение…"'))
+edit('app/components/chat.tsx',lambda s:'import { QwenControls } from "./qwen-controls";\n'+re.sub(r'<ChatActions\s+uploadImage=\{uploadImage\}.*?setShowChatSidePanel=\{setShowChatSidePanel\}\s*/>', '<QwenControls onFiles={qwenFiles.add} files={qwenFiles.files} removeFile={qwenFiles.remove} fileError={qwenFiles.error} reading={qwenFiles.reading} />',s,flags=re.S).replace('placeholder={Locale.Chat.Input(submitKey)}','placeholder="Напиши сообщение…"'))
 edit('app/components/sidebar.tsx',lambda s:s.replace('title="NextChat"','title="Qwen"').replace('subTitle="Build your own AI assistant."','subTitle="Твоё пространство для идей"'))
 edit('app/store/config.ts',lambda s:s.replace('theme: Theme.Auto as Theme','theme: Theme.Dark as Theme').replace('tightBorder: !!config?.isApp','tightBorder: true').replace('sendPreviewBubble: true','sendPreviewBubble: false'))
+
+shutil.copyfile(Path(__file__).with_name('qwen-files.ts'),r/'app/qwen-files.ts')
+(r/'app/qwen-files.d.ts').write_text('declare module "mammoth/mammoth.browser";\n')
+edit('app/components/chat.tsx',lambda s:'import { useQwenFiles } from "../qwen-files";\n'+s.replace('  const [attachImages, setAttachImages]', '  const qwenFiles=useQwenFiles(session.id);\n  const [attachImages, setAttachImages]').replace('  const doSubmit = (userInput: string) => {','  const doSubmit = (userInput: string) => {\n    if(qwenFiles.reading)return;\n    userInput=qwenFiles.compose(userInput);').replace('    setAttachImages([]);\n    chatStore.setLastInput(userInput);','    qwenFiles.clear();\n    setAttachImages([]);\n    chatStore.setLastInput(userInput);').replace('<div className={styles["chat-input-panel"]}>','<div className={styles["chat-input-panel"]} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();qwenFiles.add(e.dataTransfer.files)}}>').replace('text={Locale.Chat.Send}\n                  className={styles["chat-input-send"]}', 'text="↑"\n                  title="Отправить сообщение"\n                  className={styles["chat-input-send"]}'))
+
+edit("app/components/chat.tsx",lambda s:s.replace("    context.push(copiedHello);","    // No synthetic greeting in the Codex-style workspace."))

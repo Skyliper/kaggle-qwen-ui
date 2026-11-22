@@ -12,3 +12,6 @@ The **Поиск + Tor** toggle supplies native model tools `web_search` and `re
 
 
 The Qwen theme fills the viewport with a neutral dark chat and sidebar. Search/Tor and the server panel are available from the sliders button beside the composer; there is no extra outer toolbar. Existing chat history remains in NextChat browser storage.
+
+
+The Codex-style composer includes independent Search/Onion controls, a persisted Low/Medium/High effort selector sent as `reasoning_effort`, and local text extraction for text/code, text PDFs and DOCX attachments. Up to five files, 10 MiB each, 160,000 extracted characters total; scans require OCR and image understanding is not enabled. Attachments are sent as text only when the user submits. No extra model requests are used for extraction.
